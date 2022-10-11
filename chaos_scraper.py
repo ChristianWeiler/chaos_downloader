@@ -16,7 +16,6 @@ def get_programs():
     return requests.get(url=CHAOS_URL).json()
 
 # downloads program zip file to program directory and extracts it
-# returns the directory the files were downloaded to
 def download_zip(program, url, download_dir):                    
     r = requests.get(url, stream=True)
     z = zipfile.ZipFile(io.BytesIO(r.content))
