@@ -1,6 +1,6 @@
 # Chaos Downloader
 ## Description
-Script for searching and download public date from Project Discovery Chaos.
+Script for searching and download public subdomain data from [Project Discovery Chaos](https://chaos.projectdiscovery.io/#/).
 
 ## Usage
 
