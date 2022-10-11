@@ -38,18 +38,6 @@ def print_subdomain_from_path(subdomains):
         i = str(i).split('/')[-1]
         i = i.split('.txt')[0]
         print(i)
-
-# print all subdomains in each txt file in a program path
-def print_all_subdomains(path):
-    subdomains = ""
-    # create a list of .txt files in the specified program directory
-    for i in list(path.glob('*.txt')):
-        temp = path / i
-                    
-    with temp.open('r') as f:
-        subdomains += f.read().strip()
-
-    print(subdomains) 
     
 def main():
 
@@ -78,17 +66,20 @@ def main():
     parser = argparse.ArgumentParser(description='Download public subdomain information from chaos.projectdiscovery.com',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog = example_usage_text)
-    parser.add_argument('--program','-p',help='Specify the program name to download data for', required=False, type=str)
-    parser.add_argument('--subdomain','-d',help='Restrict results to specific subdomains from program. Accepts multiple subdomains separated by commas', required=False, type=str)
-    parser.add_argument('--list-programs','-l',help='List all of the programs available to scrape and exits', required=False, action='store_true')
-    parser.add_argument('--list-subdomains','-s',help='List all of the subdomains available in a program and exits', required=False, action='store_true')
-    parser.add_argument('--verbose','-v',help='Don\'t print any output', required=False, action='store_true')
-    parser.add_argument('--force','-f',help='Ignore last_updated value and redownload program data', required=False, action='store_true')
+    parser.add_argument('--program','-p',help='Specify the program name to download data for.', required=False, type=str)
+    parser.add_argument('--subdomain','-d',help='Restrict results to specific subdomains from a specified program. Accepts multiple subdomains separated by commas. Ex: subdomain1.com,subdomain2.com,...', required=False, type=str)
+    parser.add_argument('--list-programs','-l',help='List all of the public programs available to download data for and exits.', required=False, action='store_true')
+    parser.add_argument('--list-subdomains','-s',help='List all of the subdomains available in a specified program and exits.', required=False, action='store_true')
+    parser.add_argument('--outfile','-o',help='Write subdomain results to specified outfile.', required=False, type=str)
+    parser.add_argument('--silent','-n',help='Don\'t print any output to terminal.', required=False, action='store_true')
+    parser.add_argument('--verbose','-v',help='Print extra information.', required=False, action='store_true')
+    parser.add_argument('--force','-f',help='Ignore last_updated value and force redownload of program data.', required=False, action='store_true')
     args = parser.parse_args()
 
     # Setup arguments and program data
     program_data = get_programs()
-    is_verbos = args.verbose        
+    is_verbos = args.verbose
+    is_silent = args.silent        
 
     # if --list flag is set, print a list of programs and exit
     if args.list_programs == True:
@@ -111,7 +102,8 @@ def main():
             if is_verbos:
                 print(f"[+] Found program: {p['name']}")
                 print(f"[*] Program project chaos data was last updated: {p['last_updated']}")
-                
+
+            # Set the program directory to download the zip to    
             download_dir = Path.cwd() / ".downloads" / program_name
             
             # if program doesn't already have a folder, create it
@@ -135,29 +127,47 @@ def main():
                     f.write(p['last_updated'])
 
             # get a list of all program subdomains from the .txt file names in the program directory
-            subdomains = list(download_dir.glob('*.txt'))
+            subdomain_files_all = list(download_dir.glob('*.txt'))
 
             # if --list-subdomains was used, print the program subdomains and exit
             if args.list_subdomains == True:
-                print_subdomain_from_path(subdomains)
+                print_subdomain_from_path(subdomain_files_all)
                 sys.exit(0)
 
             # if the --subdomain flag is set, only get the results from the specific subdomain
-            # else get all 
+            # else get all the subdomains
             if args.subdomain is not None:
                 subdomain_args = args.subdomain.split(",")
 
+                subdomain_text = ""
                 for sub in subdomain_args:
                     subdomain_file = sub + ".txt"
                     subdomain_file = download_dir / subdomain_file
                     
-                    subdomain_text = ""
                     with subdomain_file.open('r') as f:
-                        subdomain_text = f.read().strip()
-
+                        subdomain_text += f.read()
+                
+                if is_silent == False:
                     print(subdomain_text)
+
+                if args.outfile is not None:
+                    with open(args.outfile, 'w') as f:
+                        f.write(subdomain_text)
+
             else:
-                print_all_subdomains(download_dir)
+                subdomain_text = ""
+                for sub in subdomain_files_all:
+                    sub = download_dir / sub
+                                
+                    with sub.open('r') as f:
+                        subdomain_text += f.read()
+
+                if is_silent == False:
+                    print(subdomain_text)
+
+                if args.outfile is not None:
+                    with open(args.outfile, 'w') as f:
+                        f.write(subdomain_text)
                    
 
 if __name__ == "__main__":
